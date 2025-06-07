@@ -1,8 +1,16 @@
+export interface Category {
+    id: number
+    name: string
+    description: string
+    created_at: string
+    updated_at: string
+}
+
 export interface Product {
     id: number
     name: string
     price: number | string // Can be either number or string from API
-    category: string | null
+    category: Category | string | null
     sku: string
     image?: string
     description?: string

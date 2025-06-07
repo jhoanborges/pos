@@ -34,11 +34,14 @@ export function useProducts() {
     }
   );
 
-  // Transform products to ensure price is a number
+  // Transform products to ensure price is a number and handle category object
   const transformedProducts = data?.data?.map(product => ({
     ...product,
     price: parseFloat(product.price),
-    category: product.category || 'Uncategorized' // Provide default category if null
+    // Extract category name if it's an object, otherwise use the value or default
+    category: typeof product.category === 'object' && product.category !== null 
+      ? product.category.name 
+      : (product.category || 'Uncategorized')
   })) || [];
 
   return {
