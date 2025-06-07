@@ -8,9 +8,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, CreditCard, Banknote } from "lucide-react"
 import { formatPrice } from "@/utils/price"
+import { axios } from "@/lib/axios"
+import { useAppSelector } from "@/redux/hooks"
 
 interface CheckoutProps {
     total: number
+    cartItems: Array<{
+        id: string | number
+        name: string
+        price: number
+        quantity: number
+        sku?: string
+    }>
     onCancel: () => void
     onPaymentComplete: (details: {
         method: string
@@ -23,15 +32,52 @@ export function Checkout({ total, onCancel, onPaymentComplete }: CheckoutProps) 
     const [paymentMethod, setPaymentMethod] = useState<string>("card")
     const [cashAmount, setCashAmount] = useState<string>("")
     const [isProcessing, setIsProcessing] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
-    const handleCardPayment = () => {
+
+    const cartItems = useAppSelector((state) => state.cart.items)
+
+    const handleCardPayment = async () => {
         setIsProcessing(true)
-        // Simulate card processing
-        setTimeout(() => {
+        setError(null)
+
+        try {
+            // Prepare the payload with required fields
+            const payload = {
+                items: cartItems.map(item => ({
+                    product_id: item.id,
+                    quantity: item.quantity,
+                    price: item.price,
+                    name: item.name,
+                    sku: item.sku
+                })),
+                payment_method: 'card',
+                total_amount: total,
+                // Add any additional fields required by your API
+            }
+
+            // Make the API call
+            const response = await axios.post('/api/mercadopago/orders', payload, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    // Add any required authentication headers
+                }
+            })
+
+            // If the API call is successful, complete the payment
+            if (response.status === 200 || response.status === 201) {
+                onPaymentComplete({ method: "card", paymentId: response.data.id })
+            } else {
+                throw new Error('Payment failed')
+            }
+        } catch (err) {
+            console.error('Payment error:', err)
+            setError('Payment processing failed. Please try again.')
+        } finally {
             setIsProcessing(false)
-            onPaymentComplete({ method: "card" })
-        }, 1500)
+        }
     }
+
 
     const handleCashPayment = () => {
         const cashGiven = Number.parseFloat(cashAmount)
