@@ -95,7 +95,10 @@ export default function PosSystem() {
     }
 
     if (isCompleted && receiptData) {
-        return <Receipt data={receiptData} onNewSale={startNewSale} />
+        console.log('Opening receipt page', `/app/receipt/${receiptData.receiptNumber}`)
+        window.open(`/app/receipt/${receiptData.receiptNumber}`, '_blank')
+        setReceiptData(null)
+        setIsCompleted(true)
     }
 
     return (

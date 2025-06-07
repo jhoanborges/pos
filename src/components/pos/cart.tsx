@@ -5,6 +5,7 @@ import type { CartItem } from "@/lib/types"
 import { Minus, Plus, Trash2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { formatPrice } from '@/utils/price'
+import { customSignOut } from "@/utils/auth-utils"
 
 interface CartProps {
     items: CartItem[]
@@ -93,6 +94,10 @@ export function Cart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onChe
                             </Button>
                             <Button onClick={onCheckout} className="w-full" disabled={items.length === 0}>
                                 Checkout
+                            </Button>
+
+                            <Button onClick={customSignOut} className="w-full">
+                                Logout
                             </Button>
                         </div>
                     </div>

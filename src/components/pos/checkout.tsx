@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,6 +10,10 @@ import { ArrowLeft, CreditCard, Banknote } from "lucide-react"
 import { formatPrice } from "@/utils/price"
 import { axios } from "@/lib/axios"
 import { useAppSelector } from "@/redux/hooks"
+import { PaymentProcessingModal } from "./payment-processing-modal"
+import useEcho from "@/hooks/echo"
+import { useSession } from "next-auth/react"
+import { toast } from "react-toastify"
 
 interface CheckoutProps {
     total: number
@@ -33,14 +37,23 @@ export function Checkout({ total, onCancel, onPaymentComplete }: CheckoutProps) 
     const [cashAmount, setCashAmount] = useState<string>("")
     const [isProcessing, setIsProcessing] = useState(false)
     const [error, setError] = useState<string | null>(null)
-
+    const [showProcessingModal, setShowProcessingModal] = useState(false)
+    const echo = useEcho()
+    const { data: session } = useSession()
 
     const cartItems = useAppSelector((state) => state.cart.items)
 
+    const handleCancelPayment = () => {
+        setShowProcessingModal(false)
+        setIsProcessing(false)
+        // Reset any payment state if needed
+    }
+
+
     const handleCardPayment = async () => {
         setIsProcessing(true)
-        setError(null)
 
+        setShowProcessingModal(true)
         try {
             // Prepare the payload with required fields
             const payload = {
@@ -66,15 +79,55 @@ export function Checkout({ total, onCancel, onPaymentComplete }: CheckoutProps) 
 
             // If the API call is successful, complete the payment
             if (response.status === 200 || response.status === 201) {
-                onPaymentComplete({ method: "card", paymentId: response.data.id })
+                //just call if we get events
+                //operacion procesada esperando backend aca
+                //onPaymentComplete({ method: "card", paymentId: response.data.id })
+
             } else {
                 throw new Error('Payment failed')
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Payment error:', err)
+            console.log(err.response)
+            if (err.response) {
+                // The request was made and the server responded with a status code
+                const { data } = err.response
+
+                // Handle 409 Conflict specifically
+                if (err.response.status === 409) {
+                    const errorMessage = data?.error?.errors?.[0]?.message ||
+                        data?.message ||
+                        'There is already a pending order on the terminal'
+                    toast.error(errorMessage, {
+                        autoClose: 5000,
+                        position: 'top-right',
+                    })
+                }
+                // Handle other error statuses
+                else {
+                    const errorMessage = data?.message || 'Payment processing failed'
+                    toast.error(errorMessage, {
+                        autoClose: 5000,
+                        position: 'top-right',
+                    })
+                }
+            }
+            // Network errors or other issues
+            else if (err.request) {
+                toast.error('Network error. Please check your connection.', {
+                    autoClose: 5000,
+                    position: 'top-right',
+                })
+            }
+            // Other errors
+            else {
+                toast.error(err.message || 'An unexpected error occurred', {
+                    autoClose: 5000,
+                    position: 'top-right',
+                })
+            }
+
             setError('Payment processing failed. Please try again.')
-        } finally {
-            setIsProcessing(false)
         }
     }
 
@@ -96,6 +149,34 @@ export function Checkout({ total, onCancel, onPaymentComplete }: CheckoutProps) 
         if (isNaN(cashGiven) || cashGiven < total) return 0
         return cashGiven - total
     }
+
+
+    useEffect(() => {
+        if (!session?.user?.id || !echo || !session) return;
+
+        const channel = echo.private(`transaction.${session.user.id}`)
+            .listen('.transaction.received', (event: any) => {
+                console.log('Transaction updated:', event);
+                //if (event.transaction.status === 'processed') {
+                onPaymentComplete({
+                    method: "card",
+                    cashGiven: total,
+                    change: calculateChange(),
+                })
+                //}
+            })
+            .subscribed(() => {
+                console.log('Subscribed to channel transactions');
+            })
+            .error((error: any) => {
+                console.error('Error subscribing to channel:', error);
+            });
+
+        return () => {
+            channel.stopListening('.transaction.received');
+        };
+    }, [session, echo]);
+
 
     return (
         <div className="flex flex-col h-full">
@@ -168,6 +249,7 @@ export function Checkout({ total, onCancel, onPaymentComplete }: CheckoutProps) 
                     </CardFooter>
                 </Card>
             </div>
+            <PaymentProcessingModal isOpen={showProcessingModal} onCancel={handleCancelPayment} total={total} />
         </div>
     )
 }

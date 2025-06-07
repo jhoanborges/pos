@@ -24,10 +24,9 @@ interface ReceiptProps {
         timestamp: Date
         receiptNumber: string
     }
-    onNewSale: () => void
 }
 
-export function Receipt({ data, onNewSale }: ReceiptProps) {
+export function Receipt({ data }: ReceiptProps) {
     const formatDate = (date: Date) => {
         return new Intl.DateTimeFormat("en-US", {
             dateStyle: "medium",
@@ -104,11 +103,11 @@ export function Receipt({ data, onNewSale }: ReceiptProps) {
                         <>
                             <div className="flex justify-between pt-2">
                                 <span>Cash given:</span>
-                                <span>${formatPrice(data.cashGiven)}</span>
+                                <span>${formatPrice(data.cashGiven || 0)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Change:</span>
-                                <span>${formatPrice(data.change)}</span>
+                                <span>${formatPrice(data.change || 0)}</span>
                             </div>
                         </>
                     )}
@@ -123,10 +122,6 @@ export function Receipt({ data, onNewSale }: ReceiptProps) {
                     <Button variant="outline" className="w-full" onClick={handlePrint}>
                         <Printer className="h-4 w-4 mr-2" />
                         Print
-                    </Button>
-                    <Button className="w-full" onClick={onNewSale}>
-                        New Sale
-                        <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                 </div>
             </Card>

@@ -1,40 +1,41 @@
 // src/middleware.ts
-import { NextResponse } from "next/server";
-import { NextRequest } from "next/server";
+import { auth } from '@/auth'
+import { NextResponse } from 'next/server'
 
-// This function can be marked `async` if using `await` inside
-export function middleware(req: NextRequest) {
-  const isLoginPage = req.nextUrl.pathname === "/login";
-  const isAdminRoute = req.nextUrl.pathname.startsWith("/admin");
-  const isAppRoute = req.nextUrl.pathname.startsWith("/app");
-  const isDashboardRoute = req.nextUrl.pathname.startsWith("/dashboard");
-  const isProtectedRoute = isAdminRoute || isAppRoute || isDashboardRoute;
-  
-  // Check for token in the Authorization header or cookies
-  const token = req.cookies.get("access_token")?.value;
-  const isLoggedIn = !!token;
-  
-  console.log(
-    "Middleware -",
-    "Path:", req.nextUrl.pathname,
-    "Token exists:", isLoggedIn
-  );
+export default auth(req => {
+    const isLoginPage = req.nextUrl.pathname === '/login'
+    const isAdminRoute = req.nextUrl.pathname.startsWith('/admin')
+    const isAppRoute = req.nextUrl.pathname.startsWith('/app')
+    const isDashboardRoute = req.nextUrl.pathname.startsWith('/dashboard')
+    const isProtectedRoute = isAdminRoute || isAppRoute || isDashboardRoute
 
-  // Allow direct access to login page
-  if (isLoginPage) {
-    return NextResponse.next();
-  }
-  
-  // If user is not logged in and tries to access protected routes
-  if (!isLoggedIn && isProtectedRoute) {
-    const loginUrl = new URL("/login", req.nextUrl.origin);
-    return NextResponse.redirect(loginUrl);
-  }
-  
-  // For all other routes, proceed normally
-  return NextResponse.next();
-}
+    const isLoggedIn = !!req.auth?.user
+
+    // If user is logged in and tries to access login page, redirect to app
+    if (isLoggedIn && isLoginPage) {
+        return NextResponse.redirect(new URL('/app', req.nextUrl.origin))
+    }
+
+    // Allow direct access to login page when not logged in
+    if (isLoginPage) {
+        return NextResponse.next()
+    }
+
+    // If user is not logged in and tries to access protected routes
+    if (!isLoggedIn && isProtectedRoute) {
+        return NextResponse.redirect(new URL('/login', req.nextUrl.origin))
+    }
+
+    // For all other routes, proceed normally
+    return NextResponse.next()
+})
 
 export const config = {
-  matcher: ["/app/:path*", "/dashboard/:path*", "/auth/:path*", "/admin/:path*"],
-};
+    matcher: [
+        '/app/:path*',
+        '/dashboard/:path*',
+        '/auth/:path*',
+        '/admin/:path*',
+        '/login',
+    ],
+}

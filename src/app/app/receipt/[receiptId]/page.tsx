@@ -1,6 +1,6 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Receipt as ReceiptComponent } from '@/components/pos/receipt'
 
@@ -22,9 +22,9 @@ interface ReceiptData {
 
 export default function ReceiptPage() {
     const params = useParams()
-    const router = useRouter()
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
 
+    
     useEffect(() => {
         const savedReceipt = sessionStorage.getItem('currentReceipt')
         if (savedReceipt) {
@@ -39,27 +39,27 @@ export default function ReceiptPage() {
                 console.error('Error parsing receipt data:', e)
             }
         }
-        router.push('/app')
-    }, [params.receiptId, router])
+    }, [params.receiptId])
 
-    const handleNewSale = () => {
-        sessionStorage.removeItem('currentReceipt')
-        router.push('/app')
-    }
-
-    if (!receiptData) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-        )
-    }
-
+    /*
+        if (!receiptData) {
+            return (
+                <div className="flex items-center justify-center min-h-screen">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+            )
+        }
+    */
     return <ReceiptComponent
         data={{
             ...receiptData,
-            timestamp: new Date(receiptData.timestamp)
+            timestamp: new Date(receiptData?.timestamp || new Date().toISOString()),
+            items: receiptData?.items || [],
+            total: receiptData?.total || 0,
+            paymentMethod: receiptData?.paymentMethod || '',
+            cashGiven: receiptData?.cashGiven || 0,
+            change: receiptData?.change || 0,
+            receiptNumber: receiptData?.receiptNumber || ''
         }}
-        onNewSale={handleNewSale}
     />
 }

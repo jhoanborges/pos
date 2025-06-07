@@ -8,9 +8,8 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AuthSessionStatus from '@/app/(auth)/AuthSessionStatus'
-import { toast } from 'react-toastify';
-import { getSession } from 'next-auth/react';
-import axios from 'axios';
+import { toast } from 'react-toastify'
+import { signIn, getSession } from 'next-auth/react'
 
 const Login = () => {
     const router = useRouter()
@@ -19,6 +18,7 @@ const Login = () => {
     const [shouldRemember, setShouldRemember] = useState(false)
     const [errors, setErrors] = useState([])
     const [status, setStatus] = useState(null)
+    const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
         if (router.reset?.length > 0 && errors.length === 0) {
@@ -30,74 +30,65 @@ const Login = () => {
 
     const submitForm = async event => {
         event.preventDefault()
-        
+        setIsLoading(true)
+        setErrors([])
+
         try {
-            // Use direct API call to backend instead of NextAuth's signIn
-            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
-            console.log('Backend URL:', backendUrl);
-            
-            const response = await axios.post(`${backendUrl}/api/login`, {
+            // Use NextAuth's signIn function instead of direct API call
+            const result = await signIn('credentials', {
                 email,
-                password
-            });
-            
-            console.log('Login response:', response.data);
-            
-            // Check for the token in the response data structure
-            if (response.data && response.data.data && response.data.data.token) {
-                const token = response.data.data.token;
-                
-                // Store the token in localStorage
-                localStorage.setItem('access_token', token);
-                
-                // Also set as a cookie for the middleware
-                document.cookie = `access_token=${token}; path=/; max-age=86400; SameSite=Strict`;
-                
-                // Show success toast
-                toast.success('¡Inicio de sesión exitoso!', {
-                    position: 'top-right',
-                    autoClose: 2000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                });
-                
-                // Get user data from response
-                const userData = response.data.data || {};
-                const userName = userData.name || 'Usuario';
-                console.log(`Login successful for user: ${userName}`);
-                
-                // Redirect to app
-                const redirectPath = '/app';
-                console.log(`Redirecting to ${redirectPath}`);
-                
-                // Use window.location.href for direct navigation
-                setTimeout(() => {
-                    window.location.href = redirectPath;
-                }, 100);
-            } else {
-                // Show error toast
-                toast.error('Error al iniciar sesión. Respuesta inválida del servidor.', {
-                    position: 'top-right',
-                    autoClose: 3000,
-                });
+                password,
+                redirect: false, // Don't redirect automatically
+            })
+
+            if (result?.error) {
+                // Handle authentication errors
+                toast.error(
+                    'Error al iniciar sesión: Verifique sus credenciales',
+                    {
+                        position: 'top-right',
+                        autoClose: 3000,
+                    },
+                )
+            } else if (result?.ok) {
+                // Success - get the session to confirm
+                const session = await getSession()
+
+                if (session) {
+                    toast.success('¡Inicio de sesión exitoso!', {
+                        position: 'top-right',
+                        autoClose: 2000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                    })
+
+                    // Redirect to app
+                    router.push('/app')
+                } else {
+                    toast.error('Error al obtener la sesión', {
+                        position: 'top-right',
+                        autoClose: 3000,
+                    })
+                }
             }
         } catch (error) {
-            console.error('Login error:', error);
-            
-            // Get error message from response if available
-            const errorMessage = error.response?.data?.message || 
-                                error.response?.data?.error || 
-                                error.message || 
-                                'Verifique sus credenciales';
-            
-            toast.error('Error al iniciar sesión: ' + errorMessage, {
+            toast.error('Error al iniciar sesión: ' + error.message, {
                 position: 'top-right',
                 autoClose: 3000,
-            });
+            })
+        } finally {
+            setIsLoading(false)
         }
     }
+
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            setEmail(process.env.NEXT_PUBLIC_DEFAULT_EMAIL || '')
+            setPassword(process.env.NEXT_PUBLIC_DEFAULT_PASSWORD || '')
+        }
+    }, [])
 
     return (
         <>
@@ -115,6 +106,7 @@ const Login = () => {
                         onChange={event => setEmail(event.target.value)}
                         required
                         autoFocus
+                        disabled={isLoading}
                     />
 
                     <InputError messages={errors.email} className="mt-2" />
@@ -132,12 +124,10 @@ const Login = () => {
                         onChange={event => setPassword(event.target.value)}
                         required
                         autoComplete="current-password"
+                        disabled={isLoading}
                     />
 
-                    <InputError
-                        messages={errors.password}
-                        className="mt-2"
-                    />
+                    <InputError messages={errors.password} className="mt-2" />
                 </div>
 
                 {/* Remember Me */}
@@ -153,6 +143,7 @@ const Login = () => {
                             onChange={event =>
                                 setShouldRemember(event.target.checked)
                             }
+                            disabled={isLoading}
                         />
 
                         <span className="ml-2 text-sm text-gray-600">
@@ -168,7 +159,9 @@ const Login = () => {
                         Forgot your password?
                     </Link>
 
-                    <Button className="ml-3">Login</Button>
+                    <Button className="ml-3" disabled={isLoading}>
+                        {isLoading ? 'Signing in...' : 'Login'}
+                    </Button>
                 </div>
             </form>
         </>
