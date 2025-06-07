@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, CreditCard, Banknote } from "lucide-react"
+import { formatPrice } from "@/utils/price"
 
 interface CheckoutProps {
     total: number
@@ -98,7 +99,7 @@ export function Checkout({ total, onCancel, onPaymentComplete }: CheckoutProps) 
                                 </div>
                                 {Number.parseFloat(cashAmount) >= total && (
                                     <div className="p-3 bg-green-50 text-green-700 rounded-md">
-                                        <p className="font-medium">Change: ${calculateChange().toFixed(2)}</p>
+                                        <p className="font-medium">Change: {formatPrice(calculateChange())}</p>
                                     </div>
                                 )}
                             </TabsContent>
