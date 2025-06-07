@@ -45,8 +45,13 @@ const Login = () => {
             
             // Check for the token in the response data structure
             if (response.data && response.data.data && response.data.data.token) {
+                const token = response.data.data.token;
+                
                 // Store the token in localStorage
-                localStorage.setItem('access_token', response.data.data.token);
+                localStorage.setItem('access_token', token);
+                
+                // Also set as a cookie for the middleware
+                document.cookie = `access_token=${token}; path=/; max-age=86400; SameSite=Strict`;
                 
                 // Show success toast
                 toast.success('¡Inicio de sesión exitoso!', {
@@ -67,21 +72,10 @@ const Login = () => {
                 const redirectPath = '/app';
                 console.log(`Redirecting to ${redirectPath}`);
                 
-                // Try multiple navigation methods
-                try {
-                    // First try router.push
-                    router.push(redirectPath);
-                    
-                    // As a backup, also set a timeout to use direct navigation
-                    setTimeout(() => {
-                        console.log('Using direct navigation as fallback');
-                        window.location.href = redirectPath;
-                    }, 500);
-                } catch (navError) {
-                    console.error('Navigation error:', navError);
-                    // Fallback to direct navigation
+                // Use window.location.href for direct navigation
+                setTimeout(() => {
                     window.location.href = redirectPath;
-                }
+                }, 100);
             } else {
                 // Show error toast
                 toast.error('Error al iniciar sesión. Respuesta inválida del servidor.', {
