@@ -1,21 +1,19 @@
-import { Nunito } from 'next/font/google'
+// app/layout.tsx
 import '@/app/globals.css'
+import { ReduxProvider } from '@/redux/Provider'
 
-const nunitoFont = Nunito({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-const RootLayout = ({ children }) => {
+export default function RootLayout({
+    children,
+}: {
+    children: React.ReactNode
+}) {
     return (
-        <html lang="en" className={nunitoFont.className}>
-            <body className="antialiased">{children}</body>
+        <html lang="en">
+            <body>
+                <ReduxProvider>
+                    {children}
+                </ReduxProvider>
+            </body>
         </html>
     )
 }
-
-export const metadata = {
-    title: 'Laravel',
-}
-
-export default RootLayout

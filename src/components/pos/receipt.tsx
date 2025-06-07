@@ -6,6 +6,14 @@ import { Card } from "@/components/ui/card"
 import { Printer, ArrowRight } from "lucide-react"
 import { formatPrice } from "@/utils/price"
 
+interface CartItem {
+    id: string | number
+    name: string
+    price: number
+    quantity: number
+    sku?: string
+}
+
 interface ReceiptProps {
     data: {
         items: CartItem[]

@@ -7,12 +7,14 @@ import { Checkout } from "./checkout"
 import { Receipt } from "./receipt"
 import { useProducts } from "@/lib/swr/useProducts"
 import type { CartItem, Product } from "@/lib/types"
+import { useRouter } from 'next/navigation'
+import { useAppDispatch, useAppSelector } from '@/redux/hooks'
+import { addItem, removeItem, updateQuantity, clearCart } from '@/redux/slices/cartSlice'
 
 export default function PosSystem() {
+    const router = useRouter()
     const { products, isLoading, isError } = useProducts()
-    const [cart, setCart] = useState<CartItem[]>([])
     const [isCheckingOut, setIsCheckingOut] = useState(false)
-    const [isCompleted, setIsCompleted] = useState(false)
     const [receiptData, setReceiptData] = useState<{
         items: CartItem[]
         total: number
@@ -23,36 +25,42 @@ export default function PosSystem() {
         receiptNumber: string
     } | null>(null)
 
+    const dispatch = useAppDispatch()
+    const cartItems = useAppSelector((state) => state.cart.items)
+
     const addToCart = (product: Product) => {
-        setCart((prevCart) => {
-            const existingItem = prevCart.find((item) => item.id === product.id)
-            if (existingItem) {
-                return prevCart.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item))
-            } else {
-                return [...prevCart, { ...product, quantity: 1 }]
-            }
-        })
+        dispatch(addItem({
+            id: product.id,
+            name: product.name,
+            price: Number(product.price),
+            quantity: 1,
+            sku: product.sku || ''
+        }))
     }
 
-    const updateQuantity = (id: string, quantity: number) => {
+    const updateCartItemQuantity = (productId: string | number, quantity: number) => {
         if (quantity <= 0) {
-            removeFromCart(id)
-            return
+            dispatch(removeItem(productId))
+        } else {
+            dispatch(updateQuantity({ id: productId, quantity }))
         }
-        setCart((prevCart) => prevCart.map((item) => (item.id === id ? { ...item, quantity } : item)))
     }
 
-    const removeFromCart = (id: string) => {
-        setCart((prevCart) => prevCart.filter((item) => item.id !== id))
+    const removeFromCart = (productId: string | number) => {
+        dispatch(removeItem(productId))
     }
 
-    const clearCart = () => {
-        setCart([])
+    const handleClearCart = () => {
+        dispatch(clearCart())
     }
+
 
     const calculateTotal = () => {
-        return cart.reduce((total, item) => total + item.price * item.quantity, 0)
+        return cartItems.reduce((total, item) => {
+            return total + (Number(item.price) * item.quantity)
+        }, 0)
     }
+
 
     const handleCheckout = () => {
         setIsCheckingOut(true)
@@ -64,28 +72,33 @@ export default function PosSystem() {
         change?: number
     }) => {
         const receiptNumber = `R-${Math.floor(100000 + Math.random() * 900000)}`
-
-        setReceiptData({
-            items: [...cart],
+        const receiptData = {
+            items: cartItems.map(({ id, name, price, quantity, sku }) => ({
+                id, name, price, quantity, sku
+            })),
             total: calculateTotal(),
             paymentMethod: paymentDetails.method,
             cashGiven: paymentDetails.cashGiven,
             change: paymentDetails.change,
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             receiptNumber,
-        })
+        }
 
-        setIsCompleted(true)
-        setIsCheckingOut(false)
+        handleClearCart()
+
+        sessionStorage.setItem('currentReceipt', JSON.stringify(receiptData))
+
+        //router.push(`/app/receipt/${receiptNumber}`)
+        window.open(`/app/receipt/${receiptNumber}`, '_blank');
+
     }
 
     const startNewSale = () => {
-        setCart([])
-        setIsCompleted(false)
+        handleClearCart()
         setReceiptData(null)
     }
 
-    if (isCompleted && receiptData) {
+    if (receiptData) {
         return <Receipt data={receiptData} onNewSale={startNewSale} />
     }
 
@@ -116,10 +129,10 @@ export default function PosSystem() {
                     />
                 ) : (
                     <Cart
-                        items={cart}
-                        onUpdateQuantity={updateQuantity}
+                        items={cartItems}
+                        onUpdateQuantity={updateCartItemQuantity}
                         onRemoveItem={removeFromCart}
-                        onClearCart={clearCart}
+                        onClearCart={handleClearCart}
                         onCheckout={handleCheckout}
                         total={calculateTotal()}
                     />
