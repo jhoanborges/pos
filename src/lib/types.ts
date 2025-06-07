@@ -6,6 +6,18 @@ export interface Category {
     updated_at: string
 }
 
+export interface PaginatedResponse<T> {
+    data: T[]
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+    next_page_url: string | null
+    prev_page_url: string | null
+}
+export interface ProductResponse extends PaginatedResponse<Product> {
+    // Additional product-specific response fields if needed
+}
 export interface Product {
     id: number
     name: string
@@ -13,6 +25,7 @@ export interface Product {
     category: Category | string | null
     sku: string
     image?: string
+    image_url?: string
     description?: string
     clinic_id?: number
     created_at?: string

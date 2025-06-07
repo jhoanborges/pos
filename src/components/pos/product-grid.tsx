@@ -18,12 +18,17 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
 
     // Filter out null categories and convert to array of unique categories
     const categories = ["all", ...Array.from(new Set(products.map((p) => p.category || "Uncategorized").filter(Boolean)))]
-    
+
 
     const filteredProducts = products.filter((product) => {
-        const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase())
+        const searchLower = searchQuery.toLowerCase()
+        const matchesSearch =
+            product.name.toLowerCase().includes(searchLower) ||
+            (product.sku && product.sku.toLowerCase().includes(searchLower))
+
         const productCategory = product.category || "Uncategorized"
         const matchesCategory = activeCategory === "all" || productCategory === activeCategory
+
         return matchesSearch && matchesCategory
     })
 
@@ -63,7 +68,7 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
                                 className="cursor-pointer hover:border-primary transition-colors"
                                 onClick={() => onAddToCart(product)}
                             >
-                                <CardContent className="p-3 flex flex-col items-center">
+                                <CardContent className="p-2 flex flex-col items-center">
                                     <div className="w-full aspect-square bg-gray-100 rounded-md mb-2 flex items-center justify-center overflow-hidden">
                                         {product.image ? (
                                             <img
@@ -81,6 +86,7 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
                                             <span className="text-sm font-bold">${typeof product.price === 'string' ? parseFloat(product.price).toFixed(2) : product.price.toFixed(2)}</span>
                                             <span className="text-xs text-gray-500">{product.sku}</span>
                                         </div>
+                                        <span className="text-xs text-gray-500">#{product.id}</span>
                                     </div>
                                 </CardContent>
                             </Card>

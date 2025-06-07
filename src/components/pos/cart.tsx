@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import type { CartItem } from "@/lib/types"
 import { Minus, Plus, Trash2 } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { formatPrice } from '@/utils/price'
 
 interface CartProps {
     items: CartItem[]
@@ -36,7 +37,7 @@ export function Cart({ items, onUpdateQuantity, onRemoveItem, onClearCart, onChe
                                 <div key={item.id} className="flex items-center justify-between py-2 border-b border-gray-100">
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-medium text-sm truncate">{item.name}</h3>
-                                        <p className="text-sm text-gray-500">${item.price.toFixed(2)} each</p>
+                                        <p className="text-sm text-gray-500">${formatPrice(item.price)} each</p>
                                     </div>
                                     <div className="flex items-center space-x-2 ml-4">
                                         <Button

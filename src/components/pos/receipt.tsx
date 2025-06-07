@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import type { CartItem } from "@/lib/types"
 import { Card } from "@/components/ui/card"
 import { Printer, ArrowRight } from "lucide-react"
+import { formatPrice } from "@/utils/price"
 
 interface ReceiptProps {
     data: {
@@ -32,7 +33,7 @@ export function Receipt({ data, onNewSale }: ReceiptProps) {
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-            <Card className="max-w-md w-full bg-white p-6 print:shadow-none">
+            <Card className="w-full max-w-2xl print:w-[210mm] print:max-w-none p-6 print:shadow-none">
                 <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold">ACME Store</h1>
                     <p className="text-gray-500 text-sm">123 Main Street, Anytown</p>
@@ -69,8 +70,8 @@ export function Receipt({ data, onNewSale }: ReceiptProps) {
                                 <tr key={item.id} className="border-b border-dashed">
                                     <td className="py-2">{item.name}</td>
                                     <td className="text-center py-2">{item.quantity}</td>
-                                    <td className="text-right py-2">${item.price.toFixed(2)}</td>
-                                    <td className="text-right py-2">${(item.price * item.quantity).toFixed(2)}</td>
+                                    <td className="text-right py-2">${formatPrice(item.price)}</td>
+                                    <td className="text-right py-2">${formatPrice(Number(item.price) * item.quantity)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -80,7 +81,7 @@ export function Receipt({ data, onNewSale }: ReceiptProps) {
                 <div className="space-y-1 text-sm mb-6">
                     <div className="flex justify-between">
                         <span>Subtotal:</span>
-                        <span>${data.total.toFixed(2)}</span>
+                        <span>${formatPrice(data.total)}</span>
                     </div>
                     <div className="flex justify-between">
                         <span>Tax:</span>
@@ -88,18 +89,18 @@ export function Receipt({ data, onNewSale }: ReceiptProps) {
                     </div>
                     <div className="flex justify-between font-bold">
                         <span>Total:</span>
-                        <span>${data.total.toFixed(2)}</span>
+                        <span>${formatPrice(data.total)}</span>
                     </div>
 
                     {data.paymentMethod === "cash" && (
                         <>
                             <div className="flex justify-between pt-2">
                                 <span>Cash given:</span>
-                                <span>${data.cashGiven?.toFixed(2)}</span>
+                                <span>${formatPrice(data.cashGiven)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span>Change:</span>
-                                <span>${data.change?.toFixed(2)}</span>
+                                <span>${formatPrice(data.change)}</span>
                             </div>
                         </>
                     )}
@@ -110,7 +111,7 @@ export function Receipt({ data, onNewSale }: ReceiptProps) {
                     <p>Please come again</p>
                 </div>
 
-                <div className="flex gap-2 print:hidden">
+                <div className="space-y-2 print:hidden">
                     <Button variant="outline" className="w-full" onClick={handlePrint}>
                         <Printer className="h-4 w-4 mr-2" />
                         Print
