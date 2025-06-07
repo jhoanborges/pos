@@ -1,20 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { ProductGrid } from "./product-grid"
 import { Cart } from "./cart"
 import { Checkout } from "./checkout"
 import { Receipt } from "./receipt"
 import { useProducts } from "@/lib/swr/useProducts"
 import type { CartItem, Product } from "@/lib/types"
-import { useRouter } from 'next/navigation'
-import { useAppDispatch, useAppSelector } from '@/redux/hooks'
-import { addItem, removeItem, updateQuantity, clearCart } from '@/redux/slices/cartSlice'
+import { useRouter } from "next/navigation"
+import { useAppDispatch, useAppSelector } from "@/redux/hooks"
+import { addItem, removeItem, updateQuantity, clearCart } from "@/redux/slices/cartSlice"
 
 export default function PosSystem() {
     const router = useRouter()
     const { products, isLoading, isError } = useProducts()
     const [isCheckingOut, setIsCheckingOut] = useState(false)
+    const [isCompleted, setIsCompleted] = useState(false)
     const [receiptData, setReceiptData] = useState<{
         items: CartItem[]
         total: number
@@ -29,13 +30,15 @@ export default function PosSystem() {
     const cartItems = useAppSelector((state) => state.cart.items)
 
     const addToCart = (product: Product) => {
-        dispatch(addItem({
-            id: product.id,
-            name: product.name,
-            price: Number(product.price),
-            quantity: 1,
-            sku: product.sku || ''
-        }))
+        dispatch(
+            addItem({
+                id: product.id,
+                name: product.name,
+                price: Number(product.price),
+                quantity: 1,
+                sku: product.sku || "",
+            }),
+        )
     }
 
     const updateCartItemQuantity = (productId: string | number, quantity: number) => {
@@ -54,13 +57,11 @@ export default function PosSystem() {
         dispatch(clearCart())
     }
 
-
     const calculateTotal = () => {
         return cartItems.reduce((total, item) => {
-            return total + (Number(item.price) * item.quantity)
+            return total + Number(item.price) * item.quantity
         }, 0)
     }
-
 
     const handleCheckout = () => {
         setIsCheckingOut(true)
@@ -72,33 +73,28 @@ export default function PosSystem() {
         change?: number
     }) => {
         const receiptNumber = `R-${Math.floor(100000 + Math.random() * 900000)}`
-        const receiptData = {
-            items: cartItems.map(({ id, name, price, quantity, sku }) => ({
-                id, name, price, quantity, sku
-            })),
+
+        setReceiptData({
+            items: [...cartItems],
             total: calculateTotal(),
             paymentMethod: paymentDetails.method,
             cashGiven: paymentDetails.cashGiven,
             change: paymentDetails.change,
-            timestamp: new Date().toISOString(),
+            timestamp: new Date(),
             receiptNumber,
-        }
+        })
 
-        handleClearCart()
-
-        sessionStorage.setItem('currentReceipt', JSON.stringify(receiptData))
-
-        //router.push(`/app/receipt/${receiptNumber}`)
-        window.open(`/app/receipt/${receiptNumber}`, '_blank');
-
+        setIsCompleted(true)
+        setIsCheckingOut(false)
     }
 
     const startNewSale = () => {
         handleClearCart()
+        setIsCompleted(false)
         setReceiptData(null)
     }
 
-    if (receiptData) {
+    if (isCompleted && receiptData) {
         return <Receipt data={receiptData} onNewSale={startNewSale} />
     }
 

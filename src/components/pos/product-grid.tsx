@@ -19,7 +19,6 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
     // Filter out null categories and convert to array of unique categories
     const categories = ["all", ...Array.from(new Set(products.map((p) => p.category || "Uncategorized").filter(Boolean)))]
 
-
     const filteredProducts = products.filter((product) => {
         const searchLower = searchQuery.toLowerCase()
         const matchesSearch =
@@ -34,13 +33,13 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
 
     return (
         <div className="flex flex-col h-full">
-            <div className="mb-4 flex items-center">
-                <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+            <div className="mb-6">
+                <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                         type="search"
                         placeholder="Search products..."
-                        className="pl-8"
+                        className="pl-10 h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -53,23 +52,27 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
                 onValueChange={setActiveCategory}
                 className="flex-1 flex flex-col"
             >
-                <TabsList className="grid grid-flow-col auto-cols-max gap-2 overflow-x-auto py-1 px-0 h-auto">
+                <TabsList className="bg-white border border-gray-200 p-1 h-auto mb-6">
                     {categories.map((category) => (
-                        <TabsTrigger key={category} value={category} className="capitalize px-3 py-1.5">
+                        <TabsTrigger
+                            key={category}
+                            value={category}
+                            className="capitalize px-4 py-2 text-sm font-medium data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+                        >
                             {category}
                         </TabsTrigger>
                     ))}
                 </TabsList>
                 <TabsContent value={activeCategory} className="flex-1 mt-2">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto h-[calc(100vh-180px)]">
+                    <div className="grid grid-cols-4 gap-4 overflow-y-auto h-[calc(100vh-200px)]">
                         {filteredProducts.map((product) => (
                             <Card
                                 key={product.id}
-                                className="cursor-pointer hover:border-primary transition-colors"
+                                className="cursor-pointer hover:shadow-md transition-all duration-200 border border-gray-200 bg-white"
                                 onClick={() => onAddToCart(product)}
                             >
-                                <CardContent className="p-2 flex flex-col items-center">
-                                    <div className="w-full aspect-square bg-gray-100 rounded-md mb-2 flex items-center justify-center overflow-hidden">
+                                <CardContent className="p-4">
+                                    <div className="aspect-square bg-gray-50 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                                         {product.image ? (
                                             <img
                                                 src={product.image || "/placeholder.svg"}
@@ -80,13 +83,18 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
                                             <div className="text-gray-400 text-xs text-center p-2">No image</div>
                                         )}
                                     </div>
-                                    <div className="w-full">
-                                        <h3 className="font-medium text-sm truncate">{product.name}</h3>
-                                        <div className="flex justify-between items-center mt-1">
-                                            <span className="text-sm font-bold">${typeof product.price === 'string' ? parseFloat(product.price).toFixed(2) : product.price.toFixed(2)}</span>
-                                            <span className="text-xs text-gray-500">{product.sku}</span>
+                                    <div>
+                                        <h3 className="font-medium text-sm text-gray-900 mb-1 line-clamp-2">{product.name}</h3>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-lg font-bold text-gray-900">
+                                                $
+                                                {typeof product.price === "string"
+                                                    ? Number.parseFloat(product.price).toFixed(2)
+                                                    : product.price.toFixed(2)}
+                                            </span>
+                                            <span className="text-xs text-gray-500 uppercase">{product.sku}</span>
                                         </div>
-                                        <span className="text-xs text-gray-500">#{product.id}</span>
+                                        <span className="text-xs text-gray-400">#{product.id}</span>
                                     </div>
                                 </CardContent>
                             </Card>
